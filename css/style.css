@@ -70,14 +70,16 @@ p { margin: 0 0 1em; }
   }
   /* No outer ring: the ring is only shown as the small label bubble ("Read", "Open"...) */
   .cursor-ring { border-color: transparent; opacity: 0; transition: width .25s var(--ease), height .25s var(--ease), margin .25s var(--ease), background .25s, opacity .25s; }
-  .cursor-dot { width: 8px; height: 8px; margin: -4px 0 0 -4px; transition: scale .25s var(--ease); box-shadow: 0 0 12px 2px color-mix(in srgb, var(--accent) 60%, transparent); }
-  .cursor.hover .cursor-dot { scale: 1.6; }
+  /* The 2px outline in the page colour keeps the dot visible on teal/white buttons, which share its colour on hover */
+  .cursor-dot { width: 8px; height: 8px; margin: -4px 0 0 -4px; transition: width .2s var(--ease), height .2s var(--ease), margin .2s var(--ease); box-shadow: 0 0 0 2px var(--bg), 0 0 12px 3px color-mix(in srgb, var(--accent) 55%, transparent); }
+  /* Grow with width/height, not the `scale` property: scale would also multiply the JS translate and push the dot away from the pointer */
+  .cursor.hover .cursor-dot { width: 13px; height: 13px; margin: -6.5px 0 0 -6.5px; }
   .cursor.label .cursor-ring { opacity: 1; width: 50px; height: 50px; margin: -25px 0 0 -25px; background: var(--accent); border-color: var(--accent); }
   .cursor.label .cursor-dot { opacity: 0; }
   .cursor-label { font: 600 10px var(--display); color: var(--accent-ink); opacity: 0; transition: opacity .2s; letter-spacing: .02em; }
   .cursor.label .cursor-label { opacity: 1; }
   .cursor.hidden { opacity: 0; }
-  .cursor.down .cursor-ring { transform-origin: center; scale: .85; }
+  .cursor.down.label .cursor-ring { width: 44px; height: 44px; margin: -22px 0 0 -22px; }
 }
 
 /* ---------- Nav ---------- */
