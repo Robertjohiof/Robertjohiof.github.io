@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/style.css?v=4">
 <script>
   // Apply the saved theme before first paint to avoid a flash
   try { const t = localStorage.getItem('theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
@@ -23,7 +23,7 @@
 <a class="skip" href="#work">Skip to work</a>
 <div class="cursor" aria-hidden="true"><div class="cursor-dot"></div><div class="cursor-ring"><span class="cursor-label"></span></div></div>
 
-<header class="nav" id="top">
+<header class="nav">
   <a class="brand" href="#top" aria-label="Robert Johannessen, back to top"><span class="brand-mark">RJ</span><span class="brand-name">Robert Johannessen</span></a>
   <nav aria-label="Main">
     <a href="#work">Work</a>
@@ -38,7 +38,7 @@
 </header>
 
 <main>
-  <section class="hero" aria-labelledby="hero-title">
+  <section class="hero" id="top" aria-labelledby="hero-title">
     <canvas class="hero-canvas" aria-hidden="true"></canvas>
     <div class="hero-inner">
       <p class="eyebrow reveal"><span class="pulse"></span>Open to work · Østfold, Norway</p>
@@ -136,7 +136,7 @@
   <button type="button" class="lb-btn lb-next" aria-label="Next image">›</button>
 </div>
 
-<script src="js/data.js"></script>
-<script src="js/main.js"></script>
+<script src="js/data.js?v=4"></script>
+<script src="js/main.js?v=4"></script>
 </body>
 </html>

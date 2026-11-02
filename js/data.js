@@ -140,7 +140,7 @@ window.PROJECTS = [
     tools: ["Illustrator", "Photoshop", "InDesign"],
     visual: "image",
     cover: "assets/design/kvikk-car-front.jpg",
-    compare: { before: "assets/design/kvikk-bear-sketch.jpg", after: "assets/design/kvikk-logo.png", label: "From sketch to logo" },
+    compare: { before: "assets/design/kvikk-bear-lineart.png", after: "assets/design/kvikk-logo.png", label: "From sketch to logo" },
     newsletter: "assets/design/kvikk-newsletter.jpg",
     download: { href: "assets/docs/kvikk-racing-newsletter.pdf", label: "Interactive newsletter (PDF)" },
     summary: "A visual identity for Kvikk Racing, a fictional Formula Student team representing Østfold University College.",
