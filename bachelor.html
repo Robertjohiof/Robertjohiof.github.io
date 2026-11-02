@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cable Route Planner · Robert Johannessen</title>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<script>document.documentElement.dataset.theme = 'dark'; try { const t = localStorage.getItem('theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
+<meta name="description" content="Bachelor thesis case study: a decision-support prototype for cable route planning, built with React, TypeScript and FastAPI.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6f6f3; --surface:#ffffff; --surface-2:#f1f1ee; --text:#12151b; --muted:#5a6170; --line:#dddcd6;
+  --accent:#0d9488; --accent-soft:#d5f2ee; --ok:#15803d; --warn:#c2410c; --warn-soft:#fde7d6; --bad:#b91c1c; --bad-soft:#fde2e2;
+  --track:#a8b3c2; --node:#ffffff; --node-line:#3b4756;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0a0b0f; --surface:#13161d; --surface-2:#1a1e27; --text:#f2f3f5; --muted:#a1a8b5; --line:#262a33;
+    --accent:#5eead4; --accent-soft:#123a35; --ok:#4ade80; --warn:#fb923c; --warn-soft:#3b2416; --bad:#f87171; --bad-soft:#3b1a1a;
+    --track:#4b5869; --node:#1e2733; --node-line:#c9d3df;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0a0b0f; --surface:#13161d; --surface-2:#1a1e27; --text:#f2f3f5; --muted:#a1a8b5; --line:#262a33;
+  --accent:#5eead4; --accent-soft:#123a35; --ok:#4ade80; --warn:#fb923c; --warn-soft:#3b2416; --bad:#f87171; --bad-soft:#3b1a1a;
+  --track:#4b5869; --node:#1e2733; --node-line:#c9d3df;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 Inter,system-ui,sans-serif}
+main{max-width:860px;margin:0 auto;padding:48px 16px 80px}
+h1,h2,h3{font-family:"Space Grotesk",Inter,sans-serif}
+h1{font-size:clamp(36px,7vw,64px);line-height:1.02;margin:8px 0 12px;letter-spacing:-.03em}
+.back{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:600;text-decoration:none;color:var(--text);padding:8px 14px;border:1px solid var(--line);border-radius:999px;margin-bottom:28px}
+.back:hover{border-color:var(--accent)}
+h2{font-size:22px;margin:56px 0 12px;letter-spacing:-.01em}
+h3{font-size:16px;margin:24px 0 6px}
+p{margin:0 0 14px}
+a{color:var(--accent)}
+.eyebrow{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.lead{font-size:18px;color:var(--muted)}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin:18px 0 0;padding:0;list-style:none}
+.tags li{font-size:13px;padding:3px 10px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line)}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:28px 0 0}
+.fact{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.fact b{display:block;font-size:22px;letter-spacing:-.01em}
+.fact span{font-size:13px;color:var(--muted)}
+.note{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:8px;padding:12px 16px;margin:28px 0 0;font-size:14px;color:var(--muted)}
+ul.clean{padding-left:20px;margin:0 0 14px} ul.clean li{margin:4px 0}
+table{width:100%;border-collapse:collapse;font-size:14px;margin:8px 0 16px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:13px}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.bar{height:6px;border-radius:3px;background:var(--surface-2);margin-top:6px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent)}
+code{font:500 13px/1 "JetBrains Mono",monospace;background:var(--surface-2);padding:2px 5px;border-radius:4px}
+figure{margin:20px 0 8px}
+figcaption{font-size:13px;color:var(--muted);margin-top:8px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px}
+.scroll-x{overflow-x:auto}
+.arch{display:block;min-width:620px}
+.arch text{font:500 13px Inter,sans-serif;fill:var(--text)}
+.arch .sub{font-size:11px;fill:var(--muted)}
+.arch rect{fill:var(--surface-2);stroke:var(--line)}
+.arch rect.hl{fill:var(--accent-soft);stroke:var(--accent)}
+.arch line,.arch path{stroke:var(--muted);stroke-width:1.4;fill:none}
+.arch .dash{stroke-dasharray:4 4}
+/* demo */
+.demo-head{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:10px}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:13px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:18px;height:4px;border-radius:2px;display:inline-block}
+.btn{font:600 13px Inter,sans-serif;border-radius:8px;border:1px solid var(--line);background:var(--surface-2);color:var(--text);padding:7px 12px;cursor:pointer}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+#map{width:100%;height:auto;display:block;touch-action:manipulation}
+#map .base line{stroke:var(--track);stroke-width:6;stroke-linecap:round}
+#map .overlay line{stroke-width:6;stroke-linecap:round;opacity:0;transition:opacity .15s}
+#map .overlay line.occupied{stroke:var(--warn);opacity:1}
+#map .overlay line.blocked{stroke:var(--bad);opacity:1;stroke-dasharray:2 10}
+#map .overlay line.route{stroke:var(--accent);opacity:1;stroke-width:8}
+#map .overlay line.route.conflict{stroke:var(--warn);stroke-dasharray:10 6}
+#map .hit line{stroke:transparent;stroke-width:22;cursor:pointer}
+#map .hit line:hover + line, #map .hit line:hover{stroke:rgba(127,127,127,.18)}
+#map .node circle,#map .node rect{fill:var(--node);stroke:var(--node-line);stroke-width:2;cursor:pointer;transition:fill .15s}
+#map .node.junction circle{stroke-width:1.5}
+#map .node:hover circle,#map .node:hover rect{fill:var(--accent-soft)}
+#map .node.picked circle,#map .node.picked rect{fill:var(--accent);stroke:var(--accent)}
+#map .node text{font:600 12px Inter,sans-serif;fill:var(--text);pointer-events:none}
+#map .node.picked text{fill:#fff}
+#map .zone{font:600 11px Inter,sans-serif;fill:var(--muted);letter-spacing:.06em}
+.status{font-size:14px;color:var(--muted);min-height:22px;margin:10px 0}
+.alts{display:grid;gap:8px;margin-top:6px}
+.alt{display:flex;justify-content:space-between;gap:12px;align-items:center;text-align:left;width:100%;font:14px Inter,sans-serif;color:var(--text);background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer}
+.alt[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.alt small{color:var(--muted)}
+.pill{font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.pill.ok{background:var(--accent-soft);color:var(--accent)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.howto{font-size:13px;color:var(--muted);margin:10px 0 0}
+footer{margin-top:64px;font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px}
+</style>
+</head>
+<body>
+<main>
+  <a class="back" href="./#work">← Back to portfolio</a>
+  <div class="eyebrow">Bachelor thesis · Østfold University College · 2026</div>
+  <h1>Cable Route Planner</h1>
+  <p class="lead">A decision-support prototype that lets production planners at a cable factory see the consequences of a routing choice <em>before</em> they commit to it. Built for Nexans Norway AS in Halden by a team of five.</p>
+  <ul class="tags">
+    <li>React 19</li><li>TypeScript</li><li>Vite</li><li>SVG</li><li>Python</li><li>FastAPI</li><li>Pydantic</li><li>pandas</li><li>Graph pathfinding</li>
+  </ul>
+
+  <div class="facts">
+    <div class="fact"><b>Front-end lead</b><span>My role in a team of five</span></div>
+    <div class="fact"><b>33 of 82</b><span>commits, the most in the team</span></div>
+    <div class="fact"><b>~360 h</b><span>my hours on the project</span></div>
+    <div class="fact"><b>Full-stack</b><span>front-end, map and back-end modules</span></div>
+  </div>
+
+  <p class="note">The real factory map, network layout and production data belong to Nexans and are confidential, so no screenshots of the real application are shown here. The diagrams and the interactive demo below are a <strong>fictional network</strong> I made to show the same techniques.</p>
+
+  <h2>The problem</h2>
+  <p>Large cables are produced in long, continuous runs, and each run has to be routed through a fixed network of cable tracks, switches, junctions and storage baskets inside the factory. Choosing one track can make other tracks unreachable several steps away.</p>
+  <p>The planners scheduled runs in their planning system and Excel, but the route-level decisions relied on experience and walking the factory floor. There was no shared view of which tracks were free, occupied or blocked, so conflicts were often discovered late.</p>
+
+  <h2>What we built</h2>
+  <p>A full-stack prototype that combines production runs, track status and the physical routing rules in one interactive map:</p>
+  <ul class="clean">
+    <li>The cable network is modelled as a <strong>graph</strong> of nodes and edges with direction-sensitive transition rules.</li>
+    <li>A hand-drawn, recognisable <strong>SVG map</strong> of the factory is connected to that graph through shared IDs.</li>
+    <li>Planners import production runs from an Excel export, get a <strong>recommended route</strong> for each run, can pick their own route by clicking two points on the map, and see it <strong>validated</strong> against the rules.</li>
+    <li>Booking a route updates availability, so later recommendations account for it.</li>
+  </ul>
+
+  <figure class="card">
+    <div class="scroll-x">
+    <svg class="arch" viewBox="0 0 760 330" role="img" aria-label="System architecture: React front-end talks over HTTP/JSON to a FastAPI app, which routes to six modules sharing a network service">
+      <rect class="hl" x="230" y="10" width="300" height="52" rx="10"/>
+      <text x="380" y="33" text-anchor="middle">React + TypeScript front-end</text>
+      <text class="sub" x="380" y="51" text-anchor="middle">SVG map · panels · route picker · calendar</text>
+      <line x1="380" y1="62" x2="380" y2="96"/><path d="M374 89 L380 97 L386 89"/>
+      <text class="sub" x="392" y="84">HTTP / JSON (typed API contract)</text>
+      <rect x="230" y="98" width="300" height="44" rx="10"/>
+      <text x="380" y="125" text-anchor="middle">FastAPI app (main.py)</text>
+      <line x1="380" y1="142" x2="380" y2="162"/>
+      <line x1="66" y1="162" x2="694" y2="162"/>
+      <g>
+        <line x1="66" y1="162" x2="66" y2="182"/><rect x="10" y="182" width="112" height="58" rx="10"/>
+        <text x="66" y="206" text-anchor="middle">M1 Topology</text><text class="sub" x="66" y="224" text-anchor="middle">graph model</text>
+        <line x1="191" y1="162" x2="191" y2="182"/><rect x="135" y="182" width="112" height="58" rx="10"/>
+        <text x="191" y="206" text-anchor="middle">M2 Status</text><text class="sub" x="191" y="224" text-anchor="middle">free / occupied</text>
+        <line x1="316" y1="162" x2="316" y2="182"/><rect class="hl" x="260" y="182" width="112" height="58" rx="10"/>
+        <text x="316" y="206" text-anchor="middle">M3 Import</text><text class="sub" x="316" y="224" text-anchor="middle">Excel → runs</text>
+        <line x1="444" y1="162" x2="444" y2="182"/><rect x="388" y="182" width="112" height="58" rx="10"/>
+        <text x="444" y="206" text-anchor="middle">M4 Schedule</text><text class="sub" x="444" y="224" text-anchor="middle">track time slots</text>
+        <line x1="569" y1="162" x2="569" y2="182"/><rect class="hl" x="513" y="182" width="112" height="58" rx="10"/>
+        <text x="569" y="206" text-anchor="middle">M5 Routing</text><text class="sub" x="569" y="224" text-anchor="middle">pathfinding</text>
+        <line x1="694" y1="162" x2="694" y2="182"/><rect x="638" y="182" width="112" height="58" rx="10"/>
+        <text x="694" y="206" text-anchor="middle">M6 Validation</text><text class="sub" x="694" y="224" text-anchor="middle">transition rules</text>
+      </g>
+      <path class="dash" d="M66 240 V286 H230"/><path class="dash" d="M569 240 V286 H530"/><path class="dash" d="M694 240 V296 H530"/>
+      <rect x="230" y="270" width="300" height="44" rx="10"/>
+      <text x="380" y="297" text-anchor="middle">network_service (shared, read-only graph)</text>
+    </svg>
+    </div>
+    <figcaption>Architecture. The front-end only talks to the API; each back-end module has one job. Highlighted boxes contain major parts I wrote.</figcaption>
+  </figure>
+
+  <h2>My contribution</h2>
+  <p>I led the front-end and visualisation sub-group, took the meeting minutes and shared the leadership tasks, and was group leader for a period before we moved that role to a teammate so I could focus on building. During integration I also worked across the back-end.</p>
+
+  <h3>The interactive map</h3>
+  <p>I drew the factory map in Adobe Illustrator and turned it into an interactive React component (about 11,000 lines of SVG and network-rule data). Every track, junction and basket in the SVG has the same ID as its node or edge in the back-end graph. That shared ID is what lets the front-end take an API response like "segment X is occupied" and colour exactly that piece of the map.</p>
+  <p>The map has three layers: a static <strong>visual layer</strong> that never changes, an <strong>overlay layer</strong> that shows status, recommendations and selections, and an invisible <strong>hit layer</strong> with wide click targets. State changes only touch the overlay, so the map stays stable and fast. It sits in a pan-and-zoom container for the dense areas.</p>
+
+  <h3>Front-end features</h3>
+  <ul class="clean">
+    <li>Manual route picker: click two nodes on the map and get ranked route alternatives with distance and hop count</li>
+    <li>Production run panel and a calendar date filter for the imported runs</li>
+    <li>Booking ("Tildel") wired to the back-end, with an availability panel that updates afterwards</li>
+    <li>Booking conflicts surfaced in a notification panel</li>
+    <li>Map zoom controls, and a final visual refresh of the whole interface with design tokens</li>
+    <li>The typed TypeScript contract for the network data, so the map and the API stay in sync</li>
+  </ul>
+
+  <h3>Back-end work during integration</h3>
+  <ul class="clean">
+    <li><strong>M3, the Excel importer:</strong> rewrote it for the planning system's real export format, with validation against the agreed column schema and a FastAPI router</li>
+    <li><strong>M5, the pathfinder:</strong> distance-weighted pathfinding that lists the k shortest rule-compliant routes, used both for recommendations and for the manual route picker</li>
+    <li>Extended the junction transition rules (M6) and wired the importer and pathfinder into the recommendation endpoint</li>
+  </ul>
+
+  <h3>Share of the final code</h3>
+  <p>Measured with <code>git blame</code> on the final version of the repository:</p>
+  <table>
+    <thead><tr><th>Area</th><th>Lines</th><th>My share</th></tr></thead>
+    <tbody>
+      <tr><td>SVG map and network rules</td><td class="num">11,467</td><td class="num">100%<div class="bar"><i style="width:100%"></i></div></td></tr>
+      <tr><td>Back-end Python (FastAPI modules)</td><td class="num">2,885</td><td class="num">41%<div class="bar"><i style="width:41%"></i></div></td></tr>
+      <tr><td>Front-end TypeScript (excluding the map)</td><td class="num">4,586</td><td class="num">33%<div class="bar"><i style="width:33%"></i></div></td></tr>
+      <tr><td>Front-end CSS</td><td class="num">2,982</td><td class="num">19%<div class="bar"><i style="width:19%"></i></div></td></tr>
+    </tbody>
+  </table>
+
+  <h2>Try the idea: fictional demo</h2>
+  <p>This is a small, made-up network built with the same technique as the real map: a static base layer, a status overlay and a click layer, with routes found by a distance-weighted search over the graph.</p>
+
+  <div class="card">
+    <div class="demo-head">
+      <div class="legend" aria-hidden="true">
+        <span><i style="background:var(--accent)"></i>Selected route</span>
+        <span><i style="background:var(--warn)"></i>Booked</span>
+        <span><i style="background:var(--bad)"></i>Blocked</span>
+      </div>
+      <button class="btn" id="reset" type="button">Reset</button>
+    </div>
+    <svg id="map" viewBox="0 0 760 420" role="application" aria-label="Fictional cable network. Click two nodes to find routes; click a track to block or unblock it.">
+      <text class="zone" x="40" y="28">PRODUCTION LINES</text>
+      <text class="zone" x="330" y="28">SWITCH AREA</text>
+      <text class="zone" x="640" y="28">BASKETS</text>
+      <g class="base"></g><g class="overlay"></g><g class="hit"></g><g class="nodes"></g>
+    </svg>
+    <p class="howto">Click a production line, then a basket. Click any track to block or unblock it.</p>
+    <div class="status" id="status" aria-live="polite">Pick a start node.</div>
+    <div class="alts" id="alts"></div>
+    <div class="actions">
+      <button class="btn primary" id="book" type="button" disabled>Book selected route</button>
+    </div>
+  </div>
+
+  <h2>Result</h2>
+  <p>The prototype works end to end: it renders the network, imports the real production export, recommends and validates routes, supports manual override and updates availability after bookings. Most of the Must-Have requirements were met. Browser-based file upload, per-segment capacity warnings on the map, persistent logging and a full draft-scenario mode were left as future work, and are documented as such in the thesis.</p>
+
+  <h2>What I learned</h2>
+  <ul class="clean">
+    <li><strong>A hand-made map beat an auto-layout graph library.</strong> Planners need to recognise their own factory; an abstract node diagram would have been technically easier but less useful.</li>
+    <li><strong>Shared IDs are the contract.</strong> Keeping the SVG, the TypeScript types and the Python graph on the same identifiers made integration work, and any mismatch showed up immediately on the map.</li>
+    <li><strong>Mock first, then real data.</strong> Building the front-end against mock data let us work in parallel; switching to the real Excel export exposed the edge cases.</li>
+    <li><strong>Leading a group is a job of its own.</strong> Meeting minutes, follow-up and keeping five people moving took real time next to the code, and taught me to be clear about responsibilities from day one.</li>
+  </ul>
+
+  <footer>
+    Group B26-ITK44: Aaro Sivula, Adrian Lindstad, Daoud Shafiq, Hekmat Abduweli and Robert Johannessen. Supervised by Østfold University College in collaboration with Nexans Norway AS. The demo network on this page is fictional.
+  </footer>
+</main>
+
+<script>
+(() => {
+  // Fictional network: production lines on the left, a switch area, baskets on the right
+  const NODES = {
+    L1:{x:70,y:90,kind:'line',label:'L1'}, L2:{x:70,y:210,kind:'line',label:'L2'}, L3:{x:70,y:330,kind:'line',label:'L3'},
+    J1:{x:200,y:90,kind:'junction'}, J2:{x:200,y:210,kind:'junction'}, J3:{x:200,y:330,kind:'junction'},
+    J4:{x:350,y:150,kind:'junction'}, J5:{x:350,y:270,kind:'junction'},
+    J6:{x:520,y:90,kind:'junction'}, J7:{x:520,y:210,kind:'junction'}, J8:{x:520,y:330,kind:'junction'},
+    B1:{x:680,y:90,kind:'basket',label:'B1'}, B2:{x:680,y:210,kind:'basket',label:'B2'}, B3:{x:680,y:330,kind:'basket',label:'B3'},
+  };
+  const EDGES = [
+    ['L1','J1'],['L2','J2'],['L3','J3'],['J1','J2'],['J2','J3'],
+    ['J1','J4'],['J2','J4'],['J2','J5'],['J3','J5'],['J4','J5'],
+    ['J4','J6'],['J4','J7'],['J5','J7'],['J5','J8'],['J6','J7'],['J7','J8'],
+    ['J1','J6'],['J3','J8'],['J6','B1'],['J7','B2'],['J8','B3'],
+  ].map(([a,b]) => ({id:`${a}-${b}`, a, b, len: Math.round(Math.hypot(NODES[a].x-NODES[b].x, NODES[a].y-NODES[b].y)/10)}));
+
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.getElementById('map');
+  const layer = n => svg.querySelector('.'+n);
+  const el = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); parent.appendChild(e); return e; };
+
+  const state = { start:null, end:null, blocked:new Set(), booked:new Set(), alts:[], selected:-1 };
+  const overlay = {};
+
+  // Base, overlay and hit layers share the edge id, like the real map shares ids with the back-end graph
+  for (const e of EDGES) {
+    const p = {x1:NODES[e.a].x, y1:NODES[e.a].y, x2:NODES[e.b].x, y2:NODES[e.b].y};
+    el('line', p, layer('base'));
+    overlay[e.id] = el('line', {...p, 'data-edge':e.id}, layer('overlay'));
+    const hit = el('line', {...p, 'data-edge':e.id}, layer('hit'));
+    hit.addEventListener('click', () => toggleBlocked(e.id));
+  }
+  const nodeEls = {};
+  for (const [id, n] of Object.entries(NODES)) {
+    const g = el('g', {class:`node ${n.kind}`, tabindex:0, role:'button', 'aria-label': n.label ? `Node ${n.label}` : `Junction ${id}`}, layer('nodes'));
+    if (n.kind === 'basket') el('rect', {x:n.x-22, y:n.y-18, width:44, height:36, rx:6}, g);
+    else el('circle', {cx:n.x, cy:n.y, r: n.kind === 'junction' ? 9 : 22}, g);
+    if (n.label) { const t = el('text', {x:n.x, y:n.y+4, 'text-anchor':'middle'}, g); t.textContent = n.label; }
+    g.addEventListener('click', () => pick(id));
+    g.addEventListener('keydown', ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); pick(id); } });
+    nodeEls[id] = g;
+  }
+
+  const adj = {};
+  for (const e of EDGES) { (adj[e.a] ??= []).push(e); (adj[e.b] ??= []).push(e); }
+
+  // All simple paths, ranked by distance; routes over booked track are kept but flagged as conflicts
+  function findRoutes(from, to) {
+    const out = [];
+    const walk = (node, seen, path, dist) => {
+      if (out.length > 400) return;
+      if (node === to) { out.push({edges:[...path], dist}); return; }
+      for (const e of adj[node]) {
+        const next = e.a === node ? e.b : e.a;
+        if (seen.has(next) || state.blocked.has(e.id)) continue;
+        if (next !== to && NODES[next].kind !== 'junction') continue; // routes pass through junctions only
+        seen.add(next); path.push(e.id);
+        walk(next, seen, path, dist + e.len);
+        path.pop(); seen.delete(next);
+      }
+    };
+    walk(from, new Set([from]), [], 0);
+    for (const r of out) r.conflict = r.edges.some(id => state.booked.has(id));
+    out.sort((a, b) => (a.conflict - b.conflict) || (a.dist - b.dist));
+    return out.slice(0, 3);
+  }
+
+  function pick(id) {
+    if (state.start && !state.end && id !== state.start) state.end = id;
+    else { state.start = id; state.end = null; }
+    recompute();
+  }
+  function toggleBlocked(id) {
+    state.booked.delete(id);
+    state.blocked.has(id) ? state.blocked.delete(id) : state.blocked.add(id);
+    recompute();
+  }
+  function recompute() {
+    state.alts = state.start && state.end ? findRoutes(state.start, state.end) : [];
+    state.selected = state.alts.length ? 0 : -1;
+    render();
+  }
+
+  const statusEl = document.getElementById('status'), altsEl = document.getElementById('alts'), bookBtn = document.getElementById('book');
+  const name = id => NODES[id].label || id;
+
+  function render() {
+    const route = state.alts[state.selected];
+    for (const e of EDGES) {
+      const cls = [];
+      if (state.blocked.has(e.id)) cls.push('blocked');
+      else if (route && route.edges.includes(e.id)) { cls.push('route'); if (state.booked.has(e.id)) cls.push('conflict'); }
+      else if (state.booked.has(e.id)) cls.push('occupied');
+      overlay[e.id].setAttribute('class', cls.join(' '));
+    }
+    for (const [id, g] of Object.entries(nodeEls)) g.classList.toggle('picked', id === state.start || id === state.end);
+
+    if (!state.start) statusEl.textContent = 'Pick a start node.';
+    else if (!state.end) statusEl.textContent = `Start: ${name(state.start)}. Now pick an end node.`;
+    else if (!state.alts.length) statusEl.textContent = `No route from ${name(state.start)} to ${name(state.end)}. Unblock a track or pick other nodes.`;
+    else statusEl.textContent = `${state.alts.length} route${state.alts.length > 1 ? 's' : ''} from ${name(state.start)} to ${name(state.end)}:`;
+
+    altsEl.replaceChildren(...state.alts.map((r, i) => {
+      const b = document.createElement('button');
+      b.className = 'alt'; b.type = 'button'; b.setAttribute('aria-pressed', i === state.selected);
+      b.innerHTML = `<span>Route ${i + 1} <small>· ${r.dist} m · ${r.edges.length} segments</small></span>` +
+        (r.conflict ? '<span class="pill warn">Uses booked track</span>' : '<span class="pill ok">Available</span>');
+      b.addEventListener('click', () => { state.selected = i; render(); });
+      return b;
+    }));
+    bookBtn.disabled = !route || route.conflict;
+  }
+
+  bookBtn.addEventListener('click', () => {
+    const route = state.alts[state.selected];
+    if (!route) return;
+    route.edges.forEach(id => state.booked.add(id));
+    state.start = state.end = null; state.alts = []; state.selected = -1;
+    render();
+    statusEl.textContent = 'Booked. Pick a new start node; routes will avoid the booked track where possible.';
+  });
+  document.getElementById('reset').addEventListener('click', () => {
+    Object.assign(state, {start:null, end:null, alts:[], selected:-1}); state.blocked.clear(); state.booked.clear(); render();
+  });
+  render();
+})();
+</script>
+</body>
+</html>
