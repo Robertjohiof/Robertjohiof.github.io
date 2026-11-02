@@ -244,8 +244,8 @@
   /* ---------- Compare slider ---------- */
   const mountCompare = (el, cfg) => {
     el.innerHTML = `
-      <img src="${cfg.after}" alt="Finished Kvikk Racing logo">
-      <div class="before"><img src="${cfg.before}" alt="Pencil sketch of the bear"></div>
+      <div class="stage"><img src="${cfg.after}" alt="Finished Kvikk Racing logo"></div>
+      <div class="before"><div class="stage"><img class="sketch" src="${cfg.before}" alt="Pencil sketch of the bear"></div></div>
       <div class="handle"></div><span class="tag l">Sketch</span><span class="tag r">Final logo</span>
       <input type="range" min="0" max="100" value="50" aria-label="${esc(cfg.label)}: drag to compare">`;
     const input = $('input', el);
