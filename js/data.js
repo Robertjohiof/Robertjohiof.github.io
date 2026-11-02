@@ -37,7 +37,7 @@ window.PROJECTS = [
     shots: { desktop: "assets/shots/retrospill-desktop.jpg", mobile: "assets/shots/retrospill-mobile.jpg" },
     live: "https://retrospill-tracker.robertjohannessen.workers.dev",
     github: "https://github.com/Robertjohiof/RetrospillTracker",
-    embeddable: false,
+    embeddable: true,
     summary: "A portal where retro game fans can discover classic games, search the IGDB database by genre, year and console, and keep track of what they are playing.",
     contribution: [
       "Designed most of the Figma prototypes and the synthwave identity: palette, neon typography and the grid background.",
