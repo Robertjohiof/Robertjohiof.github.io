@@ -261,7 +261,7 @@ window.PROJECTS = [
 ];
 
 window.TIMELINE = [
-  { years: "2023–2026", title: "Bachelor in Information Systems", place: "Østfold University College", text: "Web development, UX and interaction design, graphic design, databases (MySQL, grade A) and system development. Thesis with Nexans Norway." },
+  { years: "2023–2026", title: "Bachelor in Information Systems", place: "Østfold University College", text: "Web development, UX and interaction design, graphic design, databases and system development. Thesis with Nexans Norway." },
   { years: "2019–2023", title: "Logistics", place: "Prime Cargo AS", text: "Warehouse systems, training new colleagues and periods with department responsibility." },
   { years: "2003–2019", title: "Logistics and customer service", place: "Byggmakker, DHL and others", text: "Order handling, goods receipt and customer contact." },
   { years: "1998–2002", title: "IT support", place: "IBM, Manpower", text: "Software support for IBM/Lotus in Norwegian and English, PC operations and internal technical support." },
