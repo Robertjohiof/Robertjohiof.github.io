@@ -380,6 +380,7 @@
       </div>
       ${live}
       ${p.audio ? `<section class="ov-section"><h3>Listen to the trolls</h3><div class="players">${p.audio.map(a => `<div class="player" data-src="${a.src}" data-label="${esc(a.label)}"><button type="button"></button><b>${esc(a.label)}</b><canvas></canvas></div>`).join('')}</div></section>` : ''}
+      ${p.howItWorks ? `<section class="ov-section"><h3>How it works</h3>${list(p.howItWorks)}</section>` : ''}
       ${p.contribution ? `<section class="ov-section"><h3>What I did</h3>${list(p.contribution)}</section>` : ''}
       ${p.process ? `<section class="ov-section"><h3>Process</h3>${list(p.process)}</section>` : ''}
       ${p.compare ? `<section class="ov-section newsletter-row"><div class="compare small" data-cursor="Drag" id="ov-compare"></div><div><h3>${esc(p.compare.label)}</h3><p class="hint">Drag the handle to compare the pencil sketches with the finished logo.</p></div></section>` : ''}
