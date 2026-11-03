@@ -135,6 +135,11 @@ p { margin: 0 0 1em; }
 @keyframes pulse { 70% { box-shadow: 0 0 0 10px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
 .hero-title { font-size: clamp(56px, 13vw, 190px); line-height: .9; margin: 28px 0 28px; font-weight: 700; letter-spacing: -.045em; }
 .hero-title .line { display: block; }
+/* Each item starts with a dot; the inner row is shifted left and clipped so a dot never starts or ends a line */
+.hero-areas { overflow: hidden; margin: -6px 0 22px; font: 500 clamp(12px, 1.4vw, 15px) var(--mono); color: var(--text); letter-spacing: .02em; }
+.hero-areas .ha-in { display: flex; flex-wrap: wrap; row-gap: 4px; margin-left: -28px; }
+.hero-areas .ha-in span { white-space: nowrap; }
+.hero-areas .ha-in span::before { content: "·"; display: inline-block; width: 28px; text-align: center; color: var(--accent); }
 .hero-sub { font-size: clamp(18px, 2.4vw, 26px); color: var(--muted); max-width: 680px; line-height: 1.4; }
 /* Words share one grid cell on the text baseline and cross-fade, so nothing is clipped or floats */
 .rotator { display: inline-grid; color: var(--text); font-weight: 600; }
@@ -367,7 +372,9 @@ p { margin: 0 0 1em; }
   .projects { grid-template-columns: 1fr; }
   .nav nav { display: none; }
   .brand-name { font-size: 15px; }
-  .stats b { font-size: 18px; }
+  .stats { grid-template-columns: 1fr; gap: 8px; }
+  .stats div { display: flex; align-items: baseline; gap: 10px; }
+  .stats b { font-size: 17px; white-space: nowrap; }
   .devices { padding: 10% 6% 0; }
   .phone { right: 5%; width: 26%; border-radius: 16px; padding: 3px; }
   .phone img { border-radius: 13px; }

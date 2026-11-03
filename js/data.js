@@ -21,7 +21,7 @@ window.PROJECTS = [
     tools: ["React 19", "TypeScript", "SVG", "Python", "FastAPI", "Graph pathfinding"],
     visual: "network",
     caseStudy: "bachelor.html",
-    stats: [["11k", "lines of interactive map"], ["~360 h", "of hands-on work"], ["Most", "commits in the team"]],
+    stats: [["Live map", "track status across the factory"], ["Smart routes", "recommended and rule-checked"], ["From scratch", "no digital tool existed before"]],
   },
   {
     slug: "retrospill",
@@ -261,7 +261,7 @@ window.PROJECTS = [
 ];
 
 window.TIMELINE = [
-  { years: "2023–2026", title: "Bachelor in Information Systems", place: "Østfold University College", text: "Web development, UX and interaction design, graphic design, databases and system development. Thesis with Nexans Norway." },
+  { years: "2023–2026", title: "Bachelor in Information Systems", place: "Østfold University College", text: "Web development, UX and interaction design, graphic design, databases (MySQL, grade A) and system development. Thesis with Nexans Norway." },
   { years: "2019–2023", title: "Logistics", place: "Prime Cargo AS", text: "Warehouse systems, training new colleagues and periods with department responsibility." },
   { years: "2003–2019", title: "Logistics and customer service", place: "Byggmakker, DHL and others", text: "Order handling, goods receipt and customer contact." },
   { years: "1998–2002", title: "IT support", place: "IBM, Manpower", text: "Software support for IBM/Lotus in Norwegian and English, PC operations and internal technical support." },
@@ -269,7 +269,7 @@ window.TIMELINE = [
 
 window.SKILLS = {
   "Front-end": ["React", "TypeScript", "JavaScript", "Next.js", "HTML & CSS", "Tailwind", "SVG"],
-  "Back-end & data": ["Python", "FastAPI", "Node", "SQL", "Drizzle", "Sanity / GROQ", "REST APIs"],
+  "Data & back-end": ["SQL", "MySQL", "Data modelling", "SQLite / D1", "Drizzle", "Sanity / GROQ", "REST APIs", "Python", "FastAPI", "Node"],
   "Design": ["Figma", "Illustrator", "Photoshop", "InDesign", "Audition", "UX research"],
   "Ways of working": ["Git & GitHub", "Scrum", "Design Thinking", "Cloudflare", "Vercel"],
 };
