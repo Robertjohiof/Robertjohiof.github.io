@@ -21,7 +21,7 @@ window.PROJECTS = [
     tools: ["React 19", "TypeScript", "SVG", "Python", "FastAPI", "Graph pathfinding"],
     visual: "network",
     caseStudy: "bachelor.html",
-    stats: [["33 / 82", "commits, most in the team"], ["11k", "lines of interactive map"], ["41%", "of the back-end"]],
+    stats: [["11k", "lines of interactive map"], ["~360 h", "of hands-on work"], ["Most", "commits in the team"]],
   },
   {
     slug: "retrospill",
@@ -128,7 +128,7 @@ window.PROJECTS = [
     tagline: "Scrollytelling articles with parallax, video and interactive 3D.",
     year: 2024,
     context: "Communication Design · team of four",
-    role: "Developer (54% of the code)",
+    role: "Developer, wrote most of the code",
     tools: ["HTML", "CSS", "JavaScript", "Spline 3D"],
     visual: "image",
     cover: "assets/parallax/robots.jpg",
@@ -140,6 +140,7 @@ window.PROJECTS = [
       "Built the MakerSpace article: full-screen parallax photo sections and an embedded interactive 3D model made in Spline.",
       "Built \"Robotene kommer… eller er de allerede her?\": a story told through five video clips with desktop and mobile versions, a 3D robot and sections that fade in as you scroll.",
       "Made the sticky header and footer and most of the stylesheets, and made the pages responsive.",
+      "Put in the extra hours to bring the articles, the shared header and footer and the styling together into one polished site that works on both desktop and mobile.",
     ],
     gallery: [
       { src: "assets/parallax/makerspace.jpg", caption: "MakerSpace article with a 3D rocket" },

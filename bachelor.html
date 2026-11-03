@@ -115,7 +115,7 @@ footer{margin-top:64px;font-size:13px;color:var(--muted);border-top:1px solid va
 
   <div class="facts">
     <div class="fact"><b>Front-end lead</b><span>My role in a team of five</span></div>
-    <div class="fact"><b>33 of 82</b><span>commits, the most in the team</span></div>
+    <div class="fact"><b>Most commits</b><span>of anyone in the team</span></div>
     <div class="fact"><b>~360 h</b><span>my hours on the project</span></div>
     <div class="fact"><b>Full-stack</b><span>front-end, map and back-end modules</span></div>
   </div>
@@ -170,7 +170,7 @@ footer{margin-top:64px;font-size:13px;color:var(--muted);border-top:1px solid va
   </figure>
 
   <h2>My contribution</h2>
-  <p>I led the front-end and visualisation sub-group, took the meeting minutes and shared the leadership tasks, and was group leader for a period before we moved that role to a teammate so I could focus on building. During integration I also worked across the back-end.</p>
+  <p>I led the front-end and visualisation sub-group, took the meeting minutes and shared the leadership tasks, and was group leader for a period before we moved that role to a teammate so I could focus on building. I put in roughly 360 hours on the project and made the most commits in the team, and when integration needed it I picked up back-end modules too, so that we could deliver the best possible result to Nexans.</p>
 
   <h3>The interactive map</h3>
   <p>I drew the factory map in Adobe Illustrator and turned it into an interactive React component (about 11,000 lines of SVG and network-rule data). Every track, junction and basket in the SVG has the same ID as its node or edge in the back-end graph. That shared ID is what lets the front-end take an API response like "segment X is occupied" and colour exactly that piece of the map.</p>
@@ -193,17 +193,6 @@ footer{margin-top:64px;font-size:13px;color:var(--muted);border-top:1px solid va
     <li>Extended the junction transition rules (M6) and wired the importer and pathfinder into the recommendation endpoint</li>
   </ul>
 
-  <h3>Share of the final code</h3>
-  <p>Measured with <code>git blame</code> on the final version of the repository:</p>
-  <table>
-    <thead><tr><th>Area</th><th>Lines</th><th>My share</th></tr></thead>
-    <tbody>
-      <tr><td>SVG map and network rules</td><td class="num">11,467</td><td class="num">100%<div class="bar"><i style="width:100%"></i></div></td></tr>
-      <tr><td>Back-end Python (FastAPI modules)</td><td class="num">2,885</td><td class="num">41%<div class="bar"><i style="width:41%"></i></div></td></tr>
-      <tr><td>Front-end TypeScript (excluding the map)</td><td class="num">4,586</td><td class="num">33%<div class="bar"><i style="width:33%"></i></div></td></tr>
-      <tr><td>Front-end CSS</td><td class="num">2,982</td><td class="num">19%<div class="bar"><i style="width:19%"></i></div></td></tr>
-    </tbody>
-  </table>
 
   <h2>Try the idea: fictional demo</h2>
   <p>This is a small, made-up network built with the same technique as the real map: a static base layer, a status overlay and a click layer, with routes found by a distance-weighted search over the graph.</p>
