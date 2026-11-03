@@ -124,10 +124,10 @@ footer{margin-top:64px;font-size:13px;color:var(--muted);border-top:1px solid va
 
   <h2>The problem</h2>
   <p>Large cables are produced in long, continuous runs, and each run has to be routed through a fixed network of cable tracks, switches, junctions and storage baskets inside the factory. Choosing one track can make other tracks unreachable several steps away.</p>
-  <p>The planners scheduled runs in their planning system and Excel, but the route-level decisions relied on experience and walking the factory floor. There was no shared view of which tracks were free, occupied or blocked, so conflicts were often discovered late.</p>
+  <p>There was no digital tool for planning the cable routes. Route decisions relied on experience and walking the factory floor, and the old system gave no real-time picture: the planners could not see which tracks were free, occupied or blocked, or what their colleagues had already planned. Conflicts were often discovered late.</p>
 
   <h2>What we built</h2>
-  <p>A full-stack prototype that combines production runs, track status and the physical routing rules in one interactive map:</p>
+  <p>With no existing tool to build on, we started from scratch. After thorough research into how the factory's routing works and extensive planning, we built a full-stack prototype that combines production runs, track status and the physical routing rules in one interactive map:</p>
   <ul class="clean">
     <li>The cable network is modelled as a <strong>graph</strong> of nodes and edges with direction-sensitive transition rules.</li>
     <li>A hand-drawn, recognisable <strong>SVG map</strong> of the factory is connected to that graph through shared IDs.</li>
