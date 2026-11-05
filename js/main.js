@@ -37,32 +37,15 @@
   if (finePointer && !reduceMotion) {
     root.classList.add('has-cursor');
     const dot = $('.cursor-dot'), ring = $('.cursor-ring'), label = $('.cursor-label');
-    const ringPos = { x: pointer.x, y: pointer.y };
     addEventListener('pointermove', e => {
       if (e.pointerType !== 'mouse') return;
       pointer.x = e.clientX; pointer.y = e.clientY;
-      dot.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
+      dot.style.transform = ring.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
       cursor.classList.remove('hidden');
     });
     document.addEventListener('pointerleave', () => cursor.classList.add('hidden'));
     addEventListener('pointerdown', () => cursor.classList.add('down'));
     addEventListener('pointerup', () => cursor.classList.remove('down'));
-    // The ring is only visible as the label bubble, so it only animates while a label shows (plus its fade-out)
-    let ringOn = false, ringLast = 0, ringUntil = 0;
-    const ringLoop = now => {
-      const k = 1 - .82 ** ((now - ringLast) / 16.67); ringLast = now;
-      ringPos.x += (pointer.x - ringPos.x) * k;
-      ringPos.y += (pointer.y - ringPos.y) * k;
-      ring.style.transform = `translate(${ringPos.x}px, ${ringPos.y}px)`;
-      if (cursor.classList.contains('label')) ringUntil = now + 300;
-      if (now < ringUntil) requestAnimationFrame(ringLoop); else ringOn = false;
-    };
-    const startRing = () => {
-      if (ringOn) return;
-      ringOn = true; ringLast = performance.now(); ringUntil = ringLast + 300;
-      ringPos.x = pointer.x; ringPos.y = pointer.y;
-      requestAnimationFrame(ringLoop);
-    };
     // Glowing trail: keep the last ~400 ms of pointer positions and draw them as a tapering, fading ribbon.
     // The loop only runs while there are points left, so an idle mouse costs nothing.
     const trail = document.createElement('canvas');
@@ -113,7 +96,6 @@
       cursor.classList.toggle('hover', !!t && !t.dataset.cursor);
       cursor.classList.toggle('label', !!(t && t.dataset.cursor));
       label.textContent = t?.dataset.cursor || '';
-      if (t?.dataset.cursor) startRing();
     });
   } else {
     cursor.remove();
