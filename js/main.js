@@ -7,6 +7,18 @@
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const host = url => url.replace(/^https?:\/\//, '').replace(/\/$/, '');
   const { PROFILE, PROJECTS, TIMELINE, SKILLS } = window;
+  // A canvas never gets a bigger backing store than 4K, whatever the screen size
+  const canvasScale = (w, h) => Math.min(devicePixelRatio || 1, 2, Math.sqrt(8.3e6 / (w * h)));
+  const debounce = (fn, ms = 150) => { let t; return () => { clearTimeout(t); t = setTimeout(fn, ms); }; };
+  // Runs fn on an animation frame at most ~60 times a second with the latest arguments, so high refresh rate monitors don't multiply the work
+  const at60 = fn => {
+    let args, queued = false, last = 0;
+    const tick = now => {
+      if (now - last < 15) return requestAnimationFrame(tick);
+      last = now; queued = false; fn(...args);
+    };
+    return (...a) => { args = a; if (!queued) { queued = true; requestAnimationFrame(tick); } };
+  };
 
   /* ---------- Theme ---------- */
   const isLight = () => root.dataset.theme === 'light'; // dark unless the visitor picked light
@@ -35,13 +47,22 @@
     document.addEventListener('pointerleave', () => cursor.classList.add('hidden'));
     addEventListener('pointerdown', () => cursor.classList.add('down'));
     addEventListener('pointerup', () => cursor.classList.remove('down'));
-    const loop = () => {
-      ringPos.x += (pointer.x - ringPos.x) * .18;
-      ringPos.y += (pointer.y - ringPos.y) * .18;
+    // The ring is only visible as the label bubble, so it only animates while a label shows (plus its fade-out)
+    let ringOn = false, ringLast = 0, ringUntil = 0;
+    const ringLoop = now => {
+      const k = 1 - .82 ** ((now - ringLast) / 16.67); ringLast = now;
+      ringPos.x += (pointer.x - ringPos.x) * k;
+      ringPos.y += (pointer.y - ringPos.y) * k;
       ring.style.transform = `translate(${ringPos.x}px, ${ringPos.y}px)`;
-      requestAnimationFrame(loop);
+      if (cursor.classList.contains('label')) ringUntil = now + 300;
+      if (now < ringUntil) requestAnimationFrame(ringLoop); else ringOn = false;
     };
-    loop();
+    const startRing = () => {
+      if (ringOn) return;
+      ringOn = true; ringLast = performance.now(); ringUntil = ringLast + 300;
+      ringPos.x = pointer.x; ringPos.y = pointer.y;
+      requestAnimationFrame(ringLoop);
+    };
     // Glowing trail: keep the last ~400 ms of pointer positions and draw them as a tapering, fading ribbon.
     // The loop only runs while there are points left, so an idle mouse costs nothing.
     const trail = document.createElement('canvas');
@@ -49,14 +70,19 @@
     cursor.prepend(trail);
     const tctx = trail.getContext('2d');
     const pts = [];
-    let trailOn = false, tColors = [];
-    const sizeTrail = () => { const d = Math.min(devicePixelRatio || 1, 2); trail.width = innerWidth * d; trail.height = innerHeight * d; tctx.setTransform(d, 0, 0, d, 0, 0); };
+    let trailOn = false, tColors = [], dirty = null;
+    const sizeTrail = () => { const d = canvasScale(innerWidth, innerHeight); trail.width = innerWidth * d; trail.height = innerHeight * d; tctx.setTransform(d, 0, 0, d, 0, 0); dirty = null; };
     trailColors = () => { const cs = getComputedStyle(root); tColors = [cs.getPropertyValue('--accent').trim(), cs.getPropertyValue('--accent-2').trim()]; };
     const LIFE = 420;
     const drawTrail = now => {
       while (pts.length && now - pts[0].t > LIFE) pts.shift();
-      tctx.clearRect(0, 0, innerWidth, innerHeight);
+      // Only clear what was drawn last frame: clearing a whole 4K canvas every frame is what makes big screens slow
+      if (dirty) tctx.clearRect(dirty.x, dirty.y, dirty.w, dirty.h);
+      dirty = null;
       if (pts.length > 1) {
+        let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+        for (const p of pts) { if (p.x < x0) x0 = p.x; if (p.x > x1) x1 = p.x; if (p.y < y0) y0 = p.y; if (p.y > y1) y1 = p.y; }
+        dirty = { x: x0 - 12, y: y0 - 12, w: x1 - x0 + 24, h: y1 - y0 + 24 };
         tctx.lineCap = 'round';
         for (let i = 1; i < pts.length; i++) {
           const a = pts[i - 1], b = pts[i], k = i / pts.length, life = 1 - (now - b.t) / LIFE;
@@ -69,15 +95,17 @@
         }
         tctx.globalAlpha = 1;
       }
-      if (pts.length) requestAnimationFrame(drawTrail); else trailOn = false;
+      if (pts.length) requestAnimationFrame(drawTrail); else { trailOn = false; trail.hidden = true; }
     };
     addEventListener('pointermove', e => {
       if (e.pointerType !== 'mouse') return;
-      pts.push({ x: e.clientX, y: e.clientY, t: performance.now() });
-      if (pts.length > 60) pts.shift();
-      if (!trailOn) { trailOn = true; requestAnimationFrame(drawTrail); }
+      // Store a point every 8 ms at most and just move the newest one in between, so the trail looks the same at 60 and 240 Hz
+      const t = performance.now(), head = pts.at(-1);
+      if (head && t - head.t < 8) { head.x = e.clientX; head.y = e.clientY; }
+      else pts.push({ x: e.clientX, y: e.clientY, t });
+      if (!trailOn) { trailOn = true; trail.hidden = false; requestAnimationFrame(drawTrail); }
     }, { passive: true });
-    addEventListener('resize', sizeTrail);
+    addEventListener('resize', debounce(sizeTrail));
     sizeTrail(); trailColors();
 
     document.addEventListener('pointerover', e => {
@@ -85,6 +113,7 @@
       cursor.classList.toggle('hover', !!t && !t.dataset.cursor);
       cursor.classList.toggle('label', !!(t && t.dataset.cursor));
       label.textContent = t?.dataset.cursor || '';
+      if (t?.dataset.cursor) startRing();
     });
   } else {
     cursor.remove();
@@ -92,35 +121,41 @@
 
   /* ---------- Magnetic buttons ---------- */
   if (finePointer && !reduceMotion) {
+    let pulled = null;
     document.addEventListener('pointermove', e => {
       const b = e.target.closest('.magnetic');
-      $$('.magnetic.pulled').forEach(m => { if (m !== b) { m.style.transform = ''; m.classList.remove('pulled'); } });
+      if (pulled && pulled !== b) { pulled.style.transform = ''; pulled.classList.remove('pulled'); pulled = null; }
       if (!b) return;
-      const r = b.getBoundingClientRect();
-      b.style.transform = `translate(${(e.clientX - r.left - r.width / 2) * .25}px, ${(e.clientY - r.top - r.height / 2) * .35}px)`;
-      b.classList.add('pulled');
-    });
+      const r = b.getBoundingClientRect(), z = b.currentCSSZoom || 1;
+      b.style.transform = `translate(${(e.clientX - r.left - r.width / 2) * .25 / z}px, ${(e.clientY - r.top - r.height / 2) * .35 / z}px)`;
+      b.classList.add('pulled'); pulled = b;
+    }, { passive: true });
   }
 
   /* ---------- Hero: interactive dot field ---------- */
   const hero = (() => {
     const canvas = $('.hero-canvas'), ctx = canvas.getContext('2d');
     const section = $('.hero');
-    let w, h, dpr, dots = [], colors = {}, running = false, visible = true, t0 = performance.now();
+    let w, h, dpr, dots = [], colors = {}, running = false, visible = true, paused = false, last = 0, t0 = performance.now();
+    const FRAME = 1000 / 60;
     const ghost = { x: 0, y: 0 };
     const refreshColors = () => {
       const cs = getComputedStyle(root);
       colors = { dot: cs.getPropertyValue('--muted').trim(), a: cs.getPropertyValue('--accent').trim(), b: cs.getPropertyValue('--accent-2').trim() };
     };
     const resize = () => {
-      dpr = Math.min(devicePixelRatio || 1, 2);
       w = section.clientWidth; h = section.clientHeight;
+      dpr = canvasScale(w, h);
       canvas.width = w * dpr; canvas.height = h * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      const gap = w < 700 ? 24 : 30;
+      // Never more than about 3000 dots: spread them out on big screens instead of adding more
+      const gap = Math.max(w < 700 ? 24 : 30, Math.sqrt(w * h / 3000));
       dots = [];
       for (let y = gap / 2; y < h; y += gap) for (let x = gap / 2; x < w; x += gap) dots.push({ x, y, ox: 0, oy: 0, glow: 0 });
     };
     const draw = now => {
+      // A background effect doesn't need more than 60 fps, even on a 240 Hz monitor
+      if (running && now - last < FRAME - 1) { requestAnimationFrame(draw); return; }
+      last = now - (now - last) % FRAME;
       const t = (now - t0) / 1000;
       ctx.clearRect(0, 0, w, h);
       const rect = section.getBoundingClientRect();
@@ -129,6 +164,10 @@
       ghost.x = w * (.5 + .32 * Math.cos(t * .35)); ghost.y = h * (.45 + .25 * Math.sin(t * .5));
       const px = idle ? ghost.x : pointer.x - rect.left, py = idle ? ghost.y : pointer.y - rect.top;
       const R = Math.min(220, w * .28);
+      // All resting dots go in one path; only the few glowing near the pointer are drawn one by one
+      const glowing = [];
+      ctx.globalAlpha = .28; ctx.fillStyle = colors.dot;
+      ctx.beginPath();
       for (const d of dots) {
         const dx = d.x - px, dy = d.y - py, dist = Math.hypot(dx, dy);
         let tx = Math.sin(t * .9 + d.x * .012 + d.y * .008) * 1.6, ty = Math.cos(t * .8 + d.y * .012) * 1.6, g = 0;
@@ -137,23 +176,28 @@
           tx += dx / (dist || 1) * f * 34; ty += dy / (dist || 1) * f * 34; g = f;
         }
         d.ox += (tx - d.ox) * .12; d.oy += (ty - d.oy) * .12; d.glow += (g - d.glow) * .15;
-        const r = 1.1 + d.glow * 2.4;
+        if (d.glow > .05) { glowing.push(d); continue; }
+        const x = d.x + d.ox, y = d.y + d.oy;
+        ctx.moveTo(x + 1.1, y); ctx.arc(x, y, 1.1, 0, 6.283);
+      }
+      ctx.fill();
+      for (const d of glowing) {
         ctx.globalAlpha = .28 + d.glow * .72;
-        ctx.fillStyle = d.glow > .05 ? (d.x / w < .5 ? colors.a : colors.b) : colors.dot;
-        ctx.beginPath(); ctx.arc(d.x + d.ox, d.y + d.oy, r, 0, 6.283); ctx.fill();
+        ctx.fillStyle = d.x / w < .5 ? colors.a : colors.b;
+        ctx.beginPath(); ctx.arc(d.x + d.ox, d.y + d.oy, 1.1 + d.glow * 2.4, 0, 6.283); ctx.fill();
       }
       ctx.globalAlpha = 1;
       if (running) requestAnimationFrame(draw);
     };
-    const start = () => { if (!running && visible && !document.hidden) { running = true; requestAnimationFrame(draw); } };
+    const start = () => { if (!running && visible && !paused && !document.hidden) { running = true; requestAnimationFrame(draw); } };
     const stop = () => { running = false; };
     addEventListener('pointermove', e => { pointer.x = e.clientX; pointer.y = e.clientY; pointer.last = performance.now(); }, { passive: true });
-    addEventListener('resize', () => { resize(); if (reduceMotion) draw(performance.now()); });
+    addEventListener('resize', debounce(() => { resize(); if (reduceMotion) draw(performance.now()); }));
     new IntersectionObserver(([e]) => { visible = e.isIntersecting; visible ? start() : stop(); }).observe(section);
     document.addEventListener('visibilitychange', () => document.hidden ? stop() : start());
     refreshColors(); resize();
     if (reduceMotion) draw(performance.now()); else start();
-    return { refreshColors };
+    return { refreshColors, pause: on => { paused = on; on ? stop() : reduceMotion || start(); } };
   })();
 
   /* ---------- Hero word rotator ---------- */
@@ -169,7 +213,8 @@
 
   /* ---------- Marquee ---------- */
   const tools = ['React', 'TypeScript', 'Python', 'FastAPI', 'Figma', 'Illustrator', 'Next.js', 'SVG', 'Tailwind', 'Sanity', 'Cloudflare', 'Photoshop', 'InDesign', 'Git'];
-  $('.marquee-track').innerHTML = [...tools, ...tools].map(t => `<span>${t}</span>`).join('');
+  // Four copies so the loop never runs out of words, even on a 5K wide screen
+  $('.marquee-track').innerHTML = Array(4).fill(tools).flat().map(t => `<span>${t}</span>`).join('');
 
   /* ---------- Project cards ---------- */
   const networkSVG = () => `
@@ -194,12 +239,12 @@
       <span class="badge">Live app</span>
       <div class="devices">
         <div class="browser"><div class="browser-bar"><i></i><i></i><i></i><em>${esc(host(p.live))}</em></div>
-          <div class="screen"><img src="${p.shots.desktop}" alt="" loading="lazy"></div></div>
-        <div class="phone"><img src="${p.shots.mobile}" alt="" loading="lazy"></div>
+          <div class="screen"><img src="${p.shots.desktop}" alt="" loading="lazy" decoding="async"></div></div>
+        <div class="phone"><img src="${p.shots.mobile}" alt="" loading="lazy" decoding="async"></div>
       </div>`;
-    if (p.visual === 'audio') return `<span class="badge">With sound</span><div class="audio-visual"><img class="cover-img" src="${p.cover}" alt="" loading="lazy">
+    if (p.visual === 'audio') return `<span class="badge">With sound</span><div class="audio-visual"><img class="cover-img" src="${p.cover}" alt="" loading="lazy" decoding="async">
       <div class="wave">${Array.from({ length: 28 }, (_, i) => `<i style="--h:${20 + Math.round(Math.abs(Math.sin(i * 1.7)) * 75)}%;animation-delay:${(i % 7) * -.17}s"></i>`).join('')}</div></div>`;
-    return `${p.live ? '<span class="badge">Live site</span>' : ''}<img class="cover-img" src="${p.cover}" alt="" loading="lazy">`;
+    return `${p.live ? '<span class="badge">Live site</span>' : ''}<img class="cover-img" src="${p.cover}" alt="" loading="lazy" decoding="async">`;
   };
 
   const card = p => {
@@ -221,18 +266,21 @@
   grid.innerHTML = PROJECTS.map(card).join('');
 
   // Card spotlight that follows the mouse
-  grid.addEventListener('pointermove', e => {
-    const c = e.target.closest('.project'); if (!c) return;
+  const moveSpotlight = at60((c, x, y) => {
     const r = c.getBoundingClientRect();
-    c.style.setProperty('--mx', `${e.clientX - r.left}px`); c.style.setProperty('--my', `${e.clientY - r.top}px`);
+    c.style.setProperty('--mx', `${(x - r.left) / r.width * 100}%`); c.style.setProperty('--my', `${(y - r.top) / r.height * 100}%`);
   });
+  grid.addEventListener('pointermove', e => {
+    const c = e.target.closest('.project');
+    if (c) moveSpotlight(c, e.clientX, e.clientY);
+  }, { passive: true });
   // Scroll the screenshot inside the browser frame exactly to its bottom on hover
   const setScroll = img => {
     const screen = img.closest('.screen');
     img.style.setProperty('--scroll', `${Math.min(0, screen.clientHeight - img.clientHeight)}px`);
   };
   $$('.screen img').forEach(img => img.complete ? setScroll(img) : img.addEventListener('load', () => setScroll(img)));
-  addEventListener('resize', () => $$('.screen img').forEach(setScroll));
+  addEventListener('resize', debounce(() => $$('.screen img').forEach(setScroll)));
 
   // Filters
   $$('.chip').forEach(b => b.addEventListener('click', () => {
@@ -258,10 +306,10 @@
 
   /* ---------- Lightbox ---------- */
   const lb = $('#lightbox'), lbImg = $('img', lb), lbCap = $('figcaption', lb);
-  let lbItems = [], lbIndex = 0, lbReturn = null;
+  let lbItems = [], lbIndex = 0, lbReturn = null, lbTimer;
   const lbShow = i => { lbIndex = (i + lbItems.length) % lbItems.length; const it = lbItems[lbIndex]; lbImg.src = it.src; lbImg.alt = it.caption; lbCap.textContent = `${it.caption} · ${lbIndex + 1} / ${lbItems.length}`; };
-  const openLightbox = (items, i, from) => { lbItems = items; lbReturn = from; lb.hidden = false; requestAnimationFrame(() => lb.classList.add('open')); lbShow(i); $('.lb-close', lb).focus(); };
-  const closeLightbox = () => { lb.classList.remove('open'); setTimeout(() => { lb.hidden = true; lbImg.src = ''; }, 250); lbReturn?.focus(); };
+  const openLightbox = (items, i, from) => { clearTimeout(lbTimer); lbItems = items; lbReturn = from; lb.hidden = false; requestAnimationFrame(() => lb.classList.add('open')); lbShow(i); $('.lb-close', lb).focus(); };
+  const closeLightbox = () => { lb.classList.remove('open'); lbTimer = setTimeout(() => { lb.hidden = true; lbImg.removeAttribute('src'); }, 250); lbReturn?.focus(); };
   $('.lb-close', lb).addEventListener('click', closeLightbox);
   $('.lb-prev', lb).addEventListener('click', () => lbShow(lbIndex - 1));
   $('.lb-next', lb).addEventListener('click', () => lbShow(lbIndex + 1));
@@ -270,7 +318,7 @@
   lb.addEventListener('touchstart', e => { touchX = e.touches[0].clientX; }, { passive: true });
   lb.addEventListener('touchend', e => { if (touchX == null) return; const dx = e.changedTouches[0].clientX - touchX; if (Math.abs(dx) > 50) lbShow(lbIndex + (dx < 0 ? 1 : -1)); touchX = null; });
 
-  const tiles = (items, cls = '') => items.map((it, i) => `<button type="button" class="tile ${it.contain ? 'contain' : ''} ${cls}" data-i="${i}" data-cursor="View"><img src="${it.src}" alt="${esc(it.caption)}" loading="lazy"><span>${esc(it.caption)}</span></button>`).join('');
+  const tiles = (items, cls = '') => items.map((it, i) => `<button type="button" class="tile ${it.contain ? 'contain' : ''} ${cls}" data-i="${i}" data-cursor="View"><img src="${it.src}" alt="${esc(it.caption)}" loading="lazy" decoding="async"><span>${esc(it.caption)}</span></button>`).join('');
   const wireTiles = (container, items) => container.addEventListener('click', e => { const t = e.target.closest('.tile'); if (t) openLightbox(items, +t.dataset.i, t); });
 
   // Design galleries, one group per project so each brand stays together
@@ -306,19 +354,23 @@
   $('#year').textContent = new Date().getFullYear();
 
   /* ---------- Audio players with live waveform ---------- */
-  let audioCtx;
+  let audioCtx, playerListeners;
   const mountPlayers = container => $$('.player', container).forEach(pl => {
     const audio = new Audio(pl.dataset.src); audio.preload = 'none';
     const btn = $('button', pl), canvas = $('canvas', pl), g = canvas.getContext('2d');
     let analyser, data, raf;
     const icons = { play: '<svg viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z"/></svg>', pause: '<svg viewBox="0 0 24 24"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>' };
     btn.innerHTML = icons.play;
-    const size = () => { const d = Math.min(devicePixelRatio || 1, 2); canvas.width = canvas.clientWidth * d; canvas.height = canvas.clientHeight * d; };
+    const size = () => {
+      const d = Math.min(devicePixelRatio || 1, 2), W = canvas.clientWidth * d, H = canvas.clientHeight * d;
+      if (canvas.width !== W || canvas.height !== H) { canvas.width = W; canvas.height = H; }
+    };
+    const accent = getComputedStyle(root).getPropertyValue('--accent');
     const draw = () => {
       size();
       const n = 48, W = canvas.width, H = canvas.height, bw = W / n;
       g.clearRect(0, 0, W, H);
-      g.fillStyle = getComputedStyle(root).getPropertyValue('--accent');
+      g.fillStyle = accent;
       if (analyser) analyser.getByteFrequencyData(data);
       for (let i = 0; i < n; i++) {
         const v = analyser && !audio.paused ? data[Math.floor(i * data.length / n / 1.6)] / 255 : .12 + .1 * Math.abs(Math.sin(i * .9));
@@ -342,13 +394,13 @@
     });
     audio.addEventListener('pause', () => { btn.innerHTML = icons.play; btn.setAttribute('aria-label', `Play ${pl.dataset.label}`); cancelAnimationFrame(raf); draw(); });
     audio.addEventListener('ended', () => audio.pause());
-    document.addEventListener('stop-audio', e => { if (e.detail !== audio) audio.pause(); });
+    document.addEventListener('stop-audio', e => { if (e.detail !== audio) audio.pause(); }, { signal: playerListeners.signal });
     btn.setAttribute('aria-label', `Play ${pl.dataset.label}`);
   });
 
   /* ---------- Project overlay (#/p/slug) ---------- */
   const overlay = $('#overlay'), content = $('#overlay-content');
-  let lastFocus = null;
+  let lastFocus = null, closeTimer;
   const list = items => `<ol class="ov-list">${items.map(x => `<li>${esc(x)}</li>`).join('')}</ol>`;
 
   const renderProject = p => {
@@ -387,12 +439,21 @@
       ${p.gallery ? `<section class="ov-section"><h3>Gallery</h3><div class="ov-gallery">${tiles(p.gallery)}</div>${p.note ? `<p class="ov-note">${esc(p.note)}</p>` : ''}</section>` : ''}`;
   };
 
+  const releasePlayers = () => { document.dispatchEvent(new CustomEvent('stop-audio')); playerListeners?.abort(); };
+  // Nothing behind an open project needs to keep animating
+  const pausePage = on => { hero.pause(on); $('main').classList.toggle('paused', on); };
+
   const openProject = slug => {
     const p = PROJECTS.find(x => x.slug === slug);
     if (!p) return closeProject(true);
     lastFocus ??= document.activeElement;
+    // A close that's still fading out must not hide this project when its timer fires
+    clearTimeout(closeTimer);
+    releasePlayers();
+    playerListeners = new AbortController();
     content.innerHTML = renderProject(p);
     overlay.hidden = false; document.body.style.overflow = 'hidden';
+    pausePage(true);
     $('.overlay-scroll', overlay).scrollTop = 0;
     requestAnimationFrame(() => overlay.classList.add('open'));
     if (p.gallery) wireTiles($('.ov-gallery', content), p.gallery);
@@ -400,15 +461,17 @@
     mountPlayers(content);
     $('[data-load-live]', content)?.addEventListener('click', e => {
       const ph = e.target.closest('.live-placeholder');
-      ph.outerHTML = `<iframe src="${p.live}" title="${esc(p.title)} live" loading="lazy" allow="clipboard-write"></iframe>`;
+      ph.outerHTML = `<iframe src="${p.live}" title="${esc(p.title)} live" loading="lazy" decoding="async" allow="clipboard-write"></iframe>`;
     });
     document.title = `${p.title} · Robert Johannessen`;
     $('.overlay-close', overlay).focus();
   };
   const closeProject = replace => {
-    document.dispatchEvent(new CustomEvent('stop-audio'));
+    releasePlayers();
+    pausePage(false);
     overlay.classList.remove('open'); document.body.style.overflow = '';
-    setTimeout(() => { overlay.hidden = true; content.innerHTML = ''; }, 350);
+    clearTimeout(closeTimer);
+    closeTimer = setTimeout(() => { overlay.hidden = true; content.innerHTML = ''; }, 350);
     document.title = 'Robert Johannessen · Developer & Designer';
     if (replace && location.hash.startsWith('#/p/')) history.replaceState(null, '', location.pathname + location.search + '#work');
     lastFocus?.focus(); lastFocus = null;
@@ -439,6 +502,10 @@
     else if (!e.shiftKey && document.activeElement === f.at(-1)) { e.preventDefault(); f[0].focus(); }
   });
 
+  /* ---------- Pause endless animations while they're off screen ---------- */
+  const offscreen = new IntersectionObserver(entries => entries.forEach(e => e.target.classList.toggle('paused', !e.isIntersecting)));
+  $$('.hero, .marquee, .network').forEach(el => offscreen.observe(el));
+
   /* ---------- Reveal on scroll ---------- */
   const io = new IntersectionObserver(entries => entries.forEach(e => {
     if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
@@ -459,4 +526,5 @@
   ['work', 'design', 'about', 'contact'].forEach(id => navObserver.observe(document.getElementById(id)));
 
   route();
+  window.siteReady = true;
 })();

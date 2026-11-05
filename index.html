@@ -13,10 +13,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=12">
+<link rel="stylesheet" href="css/style.css?v=13">
 <script>
   // Apply the saved theme before first paint to avoid a flash
   try { const t = localStorage.getItem('theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+  document.documentElement.classList.add('js');
 </script>
 </head>
 <body>
@@ -82,7 +83,7 @@
     <div class="design-grid">
       <div class="compare reveal" id="compare" data-cursor="Drag"></div>
       <div class="phone-scroll reveal" aria-label="Kvikk Racing newsletter, scroll inside">
-        <div class="phone-frame"><div class="phone-screen" tabindex="0"><img src="assets/design/kvikk-newsletter.jpg" alt="Kvikk Racing newsletter, full length" loading="lazy"></div></div>
+        <div class="phone-frame"><div class="phone-screen" tabindex="0"><img src="assets/design/kvikk-newsletter.jpg" alt="Kvikk Racing newsletter, full length" loading="lazy" decoding="async"></div></div>
         <p class="caption">The interactive newsletter. Scroll inside the phone.</p>
       </div>
     </div>
@@ -137,7 +138,17 @@
   <button type="button" class="lb-btn lb-next" aria-label="Next image">›</button>
 </div>
 
-<script src="js/data.js?v=12"></script>
-<script src="js/main.js?v=12"></script>
+<script src="js/data.js?v=13"></script>
+<script src="js/main.js?v=13"></script>
+<script>
+  // If a script failed to load (say a network hiccup), try once more, then show the page without the effects rather than a blank screen
+  addEventListener('load', () => {
+    try {
+      if (window.siteReady) return sessionStorage.removeItem('retried');
+      if (!sessionStorage.getItem('retried')) { sessionStorage.setItem('retried', '1'); return location.reload(); }
+    } catch (e) {}
+    document.documentElement.classList.remove('js');
+  });
+</script>
 </body>
 </html>
